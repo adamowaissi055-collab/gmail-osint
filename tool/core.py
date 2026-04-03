@@ -35,7 +35,7 @@ __version__ = "1.61"
 
 
 def import_submodules(package, recursive=True):
-    """Get all the holehe submodules"""
+    """Get all the tool submodules"""
     if isinstance(package, str):
         package = importlib.import_module(package)
     results = {}
@@ -63,7 +63,7 @@ def get_functions(modules,args=None):
     return websites
 
 def check_update():
-    """Check and update holehe if not the last version"""
+    """Check and update tool if not the last version"""
     check_version = httpx.get("https://pypi.org/pypi/holehe/json")
     if check_version.json()["info"]["version"] != __version__:
         if os.name != 'nt':
@@ -87,9 +87,9 @@ def check_update():
 
 def credit():
     """Print Credit"""
-    print('Twitter : @palenath')
-    print('Github : https://github.com/megadose/holehe')
-    print('For BTC Donations : 1FHDM49QfZX6pJmhjLE5tB2K6CaTLMZpXZ')
+    print('our discord : https://discord.gg/FgR3MXqZy9') 
+    print('our youtube : https://youtube.com/@axos0022 - tiktok : https://tiktok.com/@axos002') 
+    print('axom') 
 
 def is_email(email: str) -> bool:
     """Check if the input is a valid email address
@@ -200,18 +200,13 @@ async def maincore():
     email=args.email[0]
 
     if not is_email(email):
-        exit("[-] Please enter a target email ! \nExample : holehe email@example.com")
+        exit("[-] Please enter a target email ! \nExample : tool email@example.com")
 
-    # Import Modules
-    modules = import_submodules("holehe.modules")
-    websites = get_functions(modules,args)
-    # Get timeout
+    modules = import_submodules("tool.modules")
+    websites = get_functions(modules,args) 
     timeout=args.timeout
-    # Start time
     start_time = time.time()
-    # Def the async client
     client = httpx.AsyncClient(timeout=timeout)
-    # Launching the modules
     out = []
     instrument = TrioProgress(len(websites))
     trio.lowlevel.add_instrument(instrument)
@@ -223,10 +218,8 @@ async def maincore():
     out = sorted(out, key=lambda i: i['name'])
     # Close the client
     await client.aclose()
-    # Print the result
     print_result(out,args,email,start_time,websites)
     credit()
-    # Export results
     export_csv(out,args,email)
 
 def main():
