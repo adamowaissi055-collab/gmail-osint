@@ -1,4 +1,4 @@
-from holehe.core import *
+from axomosint.core import *
 from holehe.localuseragent import *
 
 
