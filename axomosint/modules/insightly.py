@@ -1,5 +1,5 @@
 from axomosint.core import *
-from holehe.localuseragent import *
+from axomosint.localuseragent import *
 
 
 async def insightly(email, client, out):
