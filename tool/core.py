@@ -35,7 +35,7 @@ __version__ = "1.61"
 
 
 def import_submodules(package, recursive=True):
-    """Get all the tool submodules"""
+    """Get all the axomosint submodules"""
     if isinstance(package, str):
         package = importlib.import_module(package)
     results = {}
@@ -63,7 +63,7 @@ def get_functions(modules,args=None):
     return websites
 
 def check_update():
-    """Check and update tool if not the last version"""
+    """Check and update axomosint if not the last version"""
     check_version = httpx.get("https://pypi.org/pypi/holehe/json")
     if check_version.json()["info"]["version"] != __version__:
         if os.name != 'nt':
