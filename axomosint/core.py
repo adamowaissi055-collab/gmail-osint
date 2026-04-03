@@ -18,8 +18,8 @@ import string
 import random
 import json
 
-from holehe.localuseragent import ua
-from holehe.instruments import TrioProgress
+from axomosint.localuseragent import ua
+from axomosint.instruments import TrioProgress
 
 
 try:
@@ -47,43 +47,14 @@ def import_submodules(package, recursive=True):
     return results
 
 
-def get_functions(modules,args=None):
-    """Transform the modules objects to functions"""
+def get_functions(modules):
     websites = []
-
     for module in modules:
-        if len(module.split(".")) > 3 :
+        if len(module.split(".")) > 3:
             modu = modules[module]
             site = module.split(".")[-1]
-            if args is not None and args.nopasswordrecovery==True:
-                if  "adobe" not in str(modu.__dict__[site]) and "mail_ru" not in str(modu.__dict__[site]) and "odnoklassniki" not in str(modu.__dict__[site]) and "samsung" not in str(modu.__dict__[site]):
-                    websites.append(modu.__dict__[site])
-            else:
-                websites.append(modu.__dict__[site])
+            websites.append(modu.__dict__[site])
     return websites
-
-def check_update():
-    """Check and update axomosint if not the last version"""
-    check_version = httpx.get("https://pypi.org/pypi/holehe/json")
-    if check_version.json()["info"]["version"] != __version__:
-        if os.name != 'nt':
-            p = Popen(["pip3",
-                       "install",
-                       "--upgrade",
-                       "holehe"],
-                      stdout=PIPE,
-                      stderr=PIPE)
-        else:
-            p = Popen(["pip",
-                       "install",
-                       "--upgrade",
-                       "holehe"],
-                      stdout=PIPE,
-                      stderr=PIPE)
-        (output, err) = p.communicate()
-        p_status = p.wait()
-        print("Holehe has just been updated, you can restart it.")
-        exit()
 
 def credit():
     """Print Credit"""
@@ -103,14 +74,14 @@ def is_email(email: str) -> bool:
 
     return bool(re.fullmatch(EMAIL_FORMAT, email))
 
-def print_result(data,args,email,start_time,websites):
+def print_result(data,email,start_time,websites):
     def print_color(text,color,args):
         if args.nocolor == False:
             return(colored(text,color))
         else:
             return(text)
 
-    description = print_color("[+] Email used","green",args) + "," + print_color(" [-] Email not used", "magenta",args) + "," + print_color(" [x] Rate limit","yellow",args) + "," + print_color(" [!] Error","red",args)
+    description = print_color("[used]","green",args) + "," + print_color("[not used]", "magenta",args) + "," + print_color("[error]","yellow",args) + "," + print_color("[error]","red",args)
     if args.noclear==False:
         print("\033[H\033[J")
     else:
@@ -121,17 +92,14 @@ def print_result(data,args,email,start_time,websites):
 
     for results in data:
         if results["rateLimit"] and args.onlyused == False:
-            websiteprint = print_color("[x] " + results["domain"], "yellow",args)
+            websiteprint = print_color("[error] " + results["domain"], "yellow",args)
             print(websiteprint)
         elif "error" in results.keys() and results["error"] and args.onlyused == False:
             toprint = ""
             if results["others"] is not None and "Message" in str(results["others"].keys()):
                 toprint = " Error message: " + results["others"]["errorMessage"]
-            websiteprint = print_color("[!] " + results["domain"] + toprint, "red",args)
+            websiteprint = print_color("[error] " + results["domain"] + toprint, "red",args)
             print(websiteprint) 
-        elif results["exists"] == False and args.onlyused == False:
-            websiteprint = print_color("[-] " + results["domain"], "magenta",args)
-            print(websiteprint)
         elif results["exists"] == True:
             toprint = ""
             if results["emailrecovery"] is not None:
@@ -143,7 +111,7 @@ def print_result(data,args,email,start_time,websites):
             if results["others"] is not None and "Date, time of the creation" in str(results["others"].keys()):
                 toprint += " / Date, time of the creation " + results["others"]["Date, time of the creation"]
 
-            websiteprint = print_color("[+] " + results["domain"] + toprint, "green",args)
+            websiteprint = print_color("[used] " + results["domain"] + toprint, "green",args)
             print(websiteprint)
 
     print("\n" + description)
@@ -151,7 +119,7 @@ def print_result(data,args,email,start_time,websites):
           str(round(time.time() - start_time, 2)) + " seconds")
 
 
-def export_csv(data,args,email):
+def export_csv(data,email):
     """Export result to csv"""
     if args.csvoutput == True:
         now = datetime.now()
@@ -187,10 +155,6 @@ async def maincore():
                     help="Don't color terminal output")
     parser.add_argument("--no-clear", default=False, required=False,action="store_true",dest="noclear",
                     help="Do not clear the terminal to display the results")
-    parser.add_argument("-NP","--no-password-recovery", default=False, required=False,action="store_true",dest="nopasswordrecovery",
-                    help="Do not try password recovery on the websites")
-    parser.add_argument("-C","--csv", default=False, required=False,action="store_true",dest="csvoutput",
-                    help="Create a CSV with the results")
     parser.add_argument("-T","--timeout", type=int , default=10, required=False,dest="timeout",
                     help="Set max timeout value (default 10)")
 
@@ -200,9 +164,9 @@ async def maincore():
     email=args.email[0]
 
     if not is_email(email):
-        exit("[-] Please enter a target email ! \nExample : tool email@example.com")
+        exit("[-] Please enter a target email ! \nExample : axomosint email@example.com")
 
-    modules = import_submodules("tool.modules")
+    modules = import_submodules("axomosint.modules")
     websites = get_functions(modules,args) 
     timeout=args.timeout
     start_time = time.time()
@@ -214,13 +178,11 @@ async def maincore():
         for website in websites:
             nursery.start_soon(launch_module, website, email, client, out)
     trio.lowlevel.remove_instrument(instrument)
-    # Sort by modules names
     out = sorted(out, key=lambda i: i['name'])
-    # Close the client
     await client.aclose()
-    print_result(out,args,email,start_time,websites)
+    print_result(out,email,start_time,websites)
     credit()
-    export_csv(out,args,email)
+    export_csv(out,email)
 
 def main():
     trio.run(maincore)
