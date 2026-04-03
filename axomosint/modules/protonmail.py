@@ -1,9 +1,8 @@
-from holehe.core import *
-from holehe.localuseragent import *
+from axomosint.core import *
+from axomosint.localuseragent import *
 
-
-async def protonmail(email, client, out):
-    #credit https://github.com/pixelbubble/ProtOSINT
+#credit to protOSINT
+async def protonmail(email, client, out)
     name = "protonmail"
     domain = "protonmail.ch"
     method= "other"
