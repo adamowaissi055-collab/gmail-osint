@@ -1,7 +1,7 @@
-from holehe.localuseragent import ua
+from axomosint.localuseragent import ua
 import random
 import string
-import requests  # Adjust if using a different HTTP library
+import requests  
 
 async def facebook(email, client, out):
     name = "Facebook"
