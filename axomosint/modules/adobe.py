@@ -1,5 +1,5 @@
-from holehe.core import *
-from holehe.localuseragent import *
+from axomosint.core import *
+from axomosint.localuseragent import *
 
 
 async def adobe(email, client, out):
