@@ -1,5 +1,5 @@
-from holehe.core import *
-from holehe.localuseragent import *
+from axomosint.core import *
+from axomosint.localuseragent import *
 from string import ascii_lowercase, printable
 
 async def tumblr(email, client, out):
