@@ -50,11 +50,13 @@ async def main_core(email):
 
 async def run_module(module_func, email, results):
     try:
-        out = await module_func(email, httpx.AsyncClient(), [])
-        if out.get("exists"):
-            results.append({"name": module_func.__name__, "status": "[USED]"})
-        else:
-            results.append({"name": module_func.__name__, "status": "[NOT USED]"})
+        output = await module_func(email, httpx.AsyncClient(), [])
+        # Normalize output to dict
+        if not isinstance(output, dict):
+            raise ValueError(f"Module returned {type(output).__name__}, expected dict")
+        exists = output.get("exists", False)
+        status = "[USED]" if exists else "[NOT USED]"
+        results.append({"name": module_func.__name__, "status": status})
     except Exception as e:
         results.append({"name": module_func.__name__, "status": f"[ERROR: {e}]"})
     await trio.sleep(0.01)
