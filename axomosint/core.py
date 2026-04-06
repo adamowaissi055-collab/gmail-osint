@@ -78,13 +78,16 @@ def print_results(data, email, start_time, websites):
     print(f"\nChecked {len(websites)} sites in {round(time.time() - start_time,2)}s")
 
 def export_csv(data, email):
+    if not data:
+        print("[!] No results to export.")
+        return
     ts = int(datetime.timestamp(datetime.now()))
     fname = f"osint_{ts}_{email}_results.csv"
     with open(fname, "w", newline="", encoding="utf8") as f:
         w = csv.DictWriter(f, fieldnames=data[0].keys())
         w.writeheader()
         w.writerows(data)
-    print("Results exported to", fname)
+    print("[*] Results exported to", fname)
 
 async def launch(module, email, client, out):
     try:
