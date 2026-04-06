@@ -2,7 +2,7 @@ from axomosint.core import *
 from axomosint.localuseragent import *
 
 #credit to protOSINT
-async def protonmail(email, client, out)
+async def protonmail(email, client, out): 
     name = "protonmail"
     domain = "protonmail.ch"
     method= "other"
