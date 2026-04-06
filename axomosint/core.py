@@ -40,50 +40,49 @@ def load_modules():
                 modules.append(getattr(mod, name))
     return modules
 
-async def main_core(email):
-    modules = load_modules()
-    results = []
-    async with trio.open_nursery() as nursery:
-        for mod in modules:
-            nursery.start_soon(run_module, mod, email, results)
-    print_results(results, email)
-
 async def run_module(module_func, email, results):
     try:
-        output = await module_func(email, httpx.AsyncClient(), [])
-        # Normalize output to dict
-        if not isinstance(output, dict):
-            raise ValueError(f"Module returned {type(output).__name__}, expected dict")
-        exists = output.get("exists", False)
-        status = "[USED]" if exists else "[NOT USED]"
-        results.append({"name": module_func.__name__, "status": status})
+        client = httpx.AsyncClient(timeout=15)
+        out = []
+        await module_func(email, client, out)
+        await client.aclose()
+        if isinstance(out, list) and len(out) > 0 and isinstance(out[0], dict):
+            entry = out[0]
+            if entry.get("exists"):
+                results.append({"name": entry.get("domain") or module_func.__name__, "status": "[USED]"})
+            else:
+                results.append({"name": entry.get("domain") or module_func.__name__, "status": "[NOT USED]"})
+        else:
+            results.append({"name": module_func.__name__, "status": "[NOT USED]"})
     except Exception as e:
         results.append({"name": module_func.__name__, "status": f"[ERROR: {e}]"})
     await trio.sleep(0.01)
 
-def print_results(results, email):
+async def main_core(email):
+    modules = load_modules()
+    results = []
+    inst = TrioProgress(len(modules))
+    trio.lowlevel.add_instrument(inst)
+    async with trio.open_nursery() as nursery:
+        for mod in modules:
+            nursery.start_soon(run_module, mod, email, results)
+    trio.lowlevel.remove_instrument(inst)
     for r in results:
         print()
         print(f"{r['name']} {r['status']}")
     print()
-    export_csv(results, email)
-
-def export_csv(results, email):
     filename = f"osint_{int(time.time())}_{email}_results.csv"
-    fieldnames = ["domain", "status"]
     with open(filename, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
+        writer = csv.writer(f)
+        writer.writerow(["domain", "status"])
         for r in results:
-            writer.writerow({"domain": r["name"], "status": r["status"]})
+            writer.writerow([r["name"], r["status"]])
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 core.py <email>")
         sys.exit(1)
     email = sys.argv[1]
     if not is_email(email):
-        print("Invalid email address")
         sys.exit(1)
     trio.run(main_core, email)
 
