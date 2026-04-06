@@ -1,4 +1,3 @@
-
 import os
 import sys
 import subprocess
@@ -8,8 +7,7 @@ import httpx
 import time
 from datetime import datetime
 import csv
-import importlib
-import pkgutil
+import importlib.util
 import re
 
 from axomosint.localuseragent import ua
@@ -25,25 +23,19 @@ EMAIL_FORMAT = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 def is_email(email: str) -> bool:
     return bool(re.fullmatch(EMAIL_FORMAT, email))
 
-def import_submodules(package, recursive=True):
-    if isinstance(package, str):
-        package = importlib.import_module(package)
-    results = {}
-    for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
-        full_name = package.__name__ + '.' + name
-        results[full_name] = importlib.import_module(full_name)
-        if recursive and is_pkg:
-            results.update(import_submodules(full_name))
-    return results
-
-def get_functions(modules):
-    websites = []
-    for m in modules:
-        if len(m.split(".")) > 3:
-            mod = modules[m]
-            site = m.split(".")[-1]
-            websites.append(mod.__dict__[site])
-    return websites
+def load_modules():
+    modules = []
+    folder = os.path.join(os.path.dirname(__file__), "modules")
+    for file in os.listdir(folder):
+        if file.endswith(".py") and file != "__init__.py":
+            path = os.path.join(folder, file)
+            name = file[:-3]
+            spec = importlib.util.spec_from_file_location(name, path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            if hasattr(mod, name):
+                modules.append(getattr(mod, name))
+    return modules
 
 def normalize_entry(r):
     keys = ["domain", "rateLimit", "error", "exists", "emailrecovery", "phoneNumber", "others"]
@@ -82,11 +74,10 @@ async def launch(module, email, client, out):
         await module(email, client, out)
     except:
         name = str(module).split("<function ")[1].split(" ")[0]
-        out.append({"name": name, "domain": name, "rateLimit": False, "error": True, "exists": False, "emailrecovery": None, "phoneNumber": None, "others": None})
+        out.append({"domain": name, "rateLimit": False, "error": True, "exists": False, "emailrecovery": None, "phoneNumber": None, "others": None})
 
 async def main_core(email):
-    modules = import_submodules("axomosint.modules")
-    websites = get_functions(modules)
+    websites = load_modules()
     client = httpx.AsyncClient(timeout=10)
     out = []
     inst = TrioProgress(len(websites))
