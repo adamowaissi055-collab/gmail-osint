@@ -1,6 +1,6 @@
 from axomosint.core import *
 from axomosint.localuseragent import *
-
+import random
 
 async def adobe(email, client, out):
     name = "adobe"
