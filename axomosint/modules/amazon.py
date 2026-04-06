@@ -1,6 +1,6 @@
 from axomosint.core import *
 from axomosint.localuseragent import *
-
+import random
 
 async def amazon(email, client, out):
     name = "amazon"
