@@ -2,18 +2,14 @@ from bs4 import BeautifulSoup
 from termcolor import colored
 import httpx
 import trio
-from subprocess import Popen, PIPE
 import os
 import csv
 from datetime import datetime
 import time
 import importlib
 import pkgutil
-import hashlib
 import re
 import sys
-import string
-import random
 import json
 
 from axomosint.localuseragent import ua
@@ -56,49 +52,49 @@ def is_email(email: str) -> bool:
     return bool(re.fullmatch(EMAIL_FORMAT, email))
 
 def print_result(data, email, start_time, websites):
-    description = colored("[used]","green") + "," + colored("[not used]", "magenta") + "," + colored("[error]","yellow") + "," + colored("[error]","red")
+    desc = colored("[used]","green") + "," + colored("[not used]", "magenta") + "," + colored("[error]","yellow") + "," + colored("[error]","red")
     print("\033[H\033[J")
     print("*" * (len(email) + 6))
     print("   " + email)
     print("*" * (len(email) + 6))
-    for results in data:
-        if results["rateLimit"] == False and "error" not in results.keys() and results["exists"] == True:
-            toprint = ""
-            if results["emailrecovery"] is not None:
-                toprint += " " + results["emailrecovery"]
-            if results["phoneNumber"] is not None:
-                toprint += " / " + results["phoneNumber"]
-            if results["others"] is not None and "FullName" in str(results["others"].keys()):
-                toprint += " / FullName " + results["others"]["FullName"]
-            if results["others"] is not None and "Date, time of the creation" in str(results["others"].keys()):
-                toprint += " / Date, time of the creation " + results["others"]["Date, time of the creation"]
-            websiteprint = colored("[used] " + results["domain"] + toprint, "green")
-            print(websiteprint)
-    print("\n" + description)
+
+    for r in data:
+        if not r["rateLimit"] and not r["error"] and r["exists"]:
+            extras = ""
+            if r["emailrecovery"]:
+                extras += " " + r["emailrecovery"]
+            if r["phoneNumber"]:
+                extras += " / " + r["phoneNumber"]
+            if r["others"] and "FullName" in r["others"]:
+                extras += " / FullName " + r["others"]["FullName"]
+            if r["others"] and "Date, time of the creation" in r["others"]:
+                extras += " / Date, time of the creation " + r["others"]["Date, time of the creation"]
+            print(colored("[used] " + r["domain"] + extras, "green"))
+
+    print("\n" + desc)
     print(str(len(websites)) + " websites checked in " + str(round(time.time() - start_time, 2)) + " seconds")
 
 def export_csv(data, email):
     now = datetime.now()
-    timestamp = datetime.timestamp(now)
-    name_file="osint_"+str(round(timestamp))+"_"+email+"_results.csv"
-    with open(name_file, 'w', encoding='utf8', newline='') as output_file:
-        fc = csv.DictWriter(output_file, fieldnames=data[0].keys())
-        fc.writeheader()
-        fc.writerows(data)
-    exit("All results have been exported to "+name_file)
+    ts = int(datetime.timestamp(now))
+    filename = "osint_" + str(ts) + "_" + email + "_results.csv"
+    with open(filename, 'w', encoding='utf8', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+    exit("Results exported to " + filename)
 
 async def launch_module(module, email, client, out):
-    data={'aboutme': 'about.me', 'adobe': 'adobe.com'}
     try:
         await module(email, client, out)
     except Exception:
-        name=str(module).split('<function ')[1].split(' ')[0]
-        out.append({"name": name, "domain": data.get(name, name), "rateLimit": False, "error": True, "exists": False, "emailrecovery": None, "phoneNumber": None, "others": None})
+        nm = str(module).split('<function ')[1].split(' ')[0]
+        out.append({"name": nm, "domain": nm, "rateLimit": False, "error": True, "exists": False, "emailrecovery": None, "phoneNumber": None, "others": None})
 
 async def maincore(email):
     modules = import_submodules("axomosint.modules")
     websites = get_functions(modules)
-    timeout=10
+    timeout = 10
     start_time = time.time()
     client = httpx.AsyncClient(timeout=timeout)
     out = []
@@ -117,9 +113,9 @@ async def maincore(email):
 def main():
     if len(sys.argv) < 2:
         exit("Usage: python3 axomicosint.py email@example.com")
-    email=sys.argv[1]
+    email = sys.argv[1]
     if not is_email(email):
-        exit("[-] Please enter a valid email!")
+        exit("Invalid email format!")
     trio.run(maincore(email))
 
 if __name__ == "__main__":
