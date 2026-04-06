@@ -1,4 +1,12 @@
+
+import builtins
 import random
+import hashlib
+import string
+
+builtins.random = random
+builtins.hashlib = hashlib
+builtins.string = string
 import os
 import sys
 import trio
