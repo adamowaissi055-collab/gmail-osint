@@ -37,8 +37,11 @@ def load_modules():
     return modules
 
 def normalize_entry(r):
-    keys = ["domain", "rateLimit", "error", "exists", "emailrecovery", "phoneNumber", "others"]
-    return {k: r.get(k, None) for k in keys}
+    keys = ["domain", "rateLimit", "error", "errorReason", "exists", "emailrecovery", "phoneNumber", "others"]
+    normalized = {k: r.get(k, None) for k in keys}
+    if normalized["error"] and not normalized["errorReason"]:
+        normalized["errorReason"] = "Unknown"
+    return normalized
 
 def print_results(data, email, start_time, websites):
     print("\n")
@@ -46,11 +49,11 @@ def print_results(data, email, start_time, websites):
 
     for r in normalized:
         if r["error"]:
-            print(f"{r['domain']} [error]\n")
+            print(f"{r['domain']} [ERROR: {r['errorReason']}]\n")
         elif r["exists"]:
-            print(f"{r['domain']} [used]\n")
+            print(f"{r['domain']} [USED]\n")
         else:
-            print(f"{r['domain']} [not used]\n")
+            print(f"{r['domain']} [NOT USED]\n")
 
     print(f"Checked {len(websites)} sites in {round(time.time()-start_time,2)}s\n")
 
@@ -70,9 +73,9 @@ def export_csv(data, email):
 async def launch(module, email, client, out):
     try:
         await module(email, client, out)
-    except:
+    except Exception as e:
         name = str(module).split("<function ")[1].split(" ")[0]
-        out.append({"domain": name, "rateLimit": False, "error": True, "exists": False, "emailrecovery": None, "phoneNumber": None, "others": None})
+        out.append({"domain": name, "rateLimit": False, "error": True, "errorReason": str(e), "exists": False, "emailrecovery": None, "phoneNumber": None, "others": None})
 
 async def main_core(email):
     websites = load_modules()
