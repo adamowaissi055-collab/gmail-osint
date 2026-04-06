@@ -1,7 +1,6 @@
+
 import os
 import sys
-import subprocess
-import requests
 import trio
 import httpx
 import time
@@ -42,17 +41,18 @@ def normalize_entry(r):
     return {k: r.get(k, None) for k in keys}
 
 def print_results(data, email, start_time, websites):
-    print("\n"*3)
+    print("\n")
     normalized = [normalize_entry(r) for r in data]
+
     for r in normalized:
-        if not r["rateLimit"] and not r["error"] and r["exists"]:
-            extras = ""
-            if r["emailrecovery"]:
-                extras += " " + r["emailrecovery"]
-            if r["phoneNumber"]:
-                extras += " / " + r["phoneNumber"]
-            print(f"[used] {r['domain']}{extras}")
-    print(f"\nChecked {len(websites)} sites in {round(time.time()-start_time,2)}s")
+        if r["error"]:
+            print(f"{r['domain']} [error]\n")
+        elif r["exists"]:
+            print(f"{r['domain']} [used]\n")
+        else:
+            print(f"{r['domain']} [not used]\n")
+
+    print(f"Checked {len(websites)} sites in {round(time.time()-start_time,2)}s\n")
 
 def export_csv(data, email):
     ts = int(datetime.timestamp(datetime.now()))
@@ -60,14 +60,12 @@ def export_csv(data, email):
     if not data:
         with open(fname, "w", newline="", encoding="utf8") as f:
             f.write("No results found\n")
-        print("Results exported to", fname)
         return
     normalized = [normalize_entry(r) for r in data]
     with open(fname, "w", newline="", encoding="utf8") as f:
         w = csv.DictWriter(f, fieldnames=normalized[0].keys())
         w.writeheader()
         w.writerows(normalized)
-    print("Results exported to", fname)
 
 async def launch(module, email, client, out):
     try:
