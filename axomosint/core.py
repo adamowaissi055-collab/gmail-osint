@@ -1,16 +1,16 @@
-from bs4 import BeautifulSoup
-from termcolor import colored
-import httpx
-import trio
+
 import os
-import csv
+import sys
+import subprocess
+import requests
+import trio
+import httpx
 from datetime import datetime
-import time
+import csv
 import importlib
 import pkgutil
 import re
-import sys
-import json
+import time
 
 from axomosint.localuseragent import ua
 from axomosint.instruments import TrioProgress
@@ -21,7 +21,21 @@ except Exception:
     import http.cookiejar as cookielib
 
 EMAIL_FORMAT = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+REMOTE_RAW = "https://raw.githubusercontent.com/adamowaissi055-collab/gmail-osint/main/axomosint/core.py"
 __version__ = "1.61"
+
+def auto_update():
+    try:
+        r = requests.get(REMOTE_RAW, timeout=8).text
+        local = open(__file__, "r").read()
+        if r != local:
+            print("[*] New version found. Updating...")
+            open(__file__, "w").write(r)
+            print("[*] Updated! Restarting...")
+            subprocess.Popen([sys.executable] + sys.argv)
+            sys.exit()
+    except:
+        pass
 
 def import_submodules(package, recursive=True):
     if isinstance(package, str):
@@ -51,72 +65,56 @@ def credit():
 def is_email(email: str) -> bool:
     return bool(re.fullmatch(EMAIL_FORMAT, email))
 
-def print_result(data, email, start_time, websites):
-    desc = colored("[used]","green") + "," + colored("[not used]", "magenta") + "," + colored("[error]","yellow") + "," + colored("[error]","red")
-    print("\033[H\033[J")
-    print("*" * (len(email) + 6))
-    print("   " + email)
-    print("*" * (len(email) + 6))
-
+def print_results(data, email, start_time, websites):
+    print("\n" * 3)
     for r in data:
         if not r["rateLimit"] and not r["error"] and r["exists"]:
             extras = ""
-            if r["emailrecovery"]:
+            if r.get("emailrecovery"):
                 extras += " " + r["emailrecovery"]
-            if r["phoneNumber"]:
+            if r.get("phoneNumber"):
                 extras += " / " + r["phoneNumber"]
-            if r["others"] and "FullName" in r["others"]:
-                extras += " / FullName " + r["others"]["FullName"]
-            if r["others"] and "Date, time of the creation" in r["others"]:
-                extras += " / Date, time of the creation " + r["others"]["Date, time of the creation"]
-            print(colored("[used] " + r["domain"] + extras, "green"))
-
-    print("\n" + desc)
-    print(str(len(websites)) + " websites checked in " + str(round(time.time() - start_time, 2)) + " seconds")
+            print(f"[used] {r['domain']}{extras}")
+    print(f"\nChecked {len(websites)} sites in {round(time.time() - start_time,2)}s")
 
 def export_csv(data, email):
-    now = datetime.now()
-    ts = int(datetime.timestamp(now))
-    filename = "osint_" + str(ts) + "_" + email + "_results.csv"
-    with open(filename, 'w', encoding='utf8', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=data[0].keys())
-        writer.writeheader()
-        writer.writerows(data)
-    exit("Results exported to " + filename)
+    ts = int(datetime.timestamp(datetime.now()))
+    fname = f"osint_{ts}_{email}_results.csv"
+    with open(fname, "w", newline="", encoding="utf8") as f:
+        w = csv.DictWriter(f, fieldnames=data[0].keys())
+        w.writeheader()
+        w.writerows(data)
+    print("Results exported to", fname)
 
-async def launch_module(module, email, client, out):
+async def launch(module, email, client, out):
     try:
         await module(email, client, out)
-    except Exception:
-        nm = str(module).split('<function ')[1].split(' ')[0]
-        out.append({"name": nm, "domain": nm, "rateLimit": False, "error": True, "exists": False, "emailrecovery": None, "phoneNumber": None, "others": None})
+    except:
+        name = str(module).split("<function ")[1].split(" ")[0]
+        out.append({"name": name,"domain": name,"rateLimit": False,"error": True,
+                    "exists": False,"emailrecovery": None,"phoneNumber": None,"others": None})
 
-async def maincore(email):
+async def main_core(email):
+    auto_update()
     modules = import_submodules("axomosint.modules")
     websites = get_functions(modules)
-    timeout = 10
-    start_time = time.time()
-    client = httpx.AsyncClient(timeout=timeout)
+    client = httpx.AsyncClient(timeout=10)
     out = []
-    instrument = TrioProgress(len(websites))
-    trio.lowlevel.add_instrument(instrument)
-    async with trio.open_nursery() as nursery:
-        for website in websites:
-            nursery.start_soon(launch_module, website, email, client, out)
-    trio.lowlevel.remove_instrument(instrument)
-    out = sorted(out, key=lambda i: i['name'])
+    inst = TrioProgress(len(websites))
+    trio.lowlevel.add_instrument(inst)
+    async with trio.open_nursery() as n:
+        for w in websites:
+            n.start_soon(launch, w, email, client, out)
+    trio.lowlevel.remove_instrument(inst)
     await client.aclose()
-    print_result(out, email, start_time, websites)
-    credit()
+    print_results(out, email, time.time(), websites)
     export_csv(out, email)
 
 def main():
-    if len(sys.argv) < 2:
-        exit("Usage: python3 axomicosint.py email@example.com")
-    email = sys.argv[1]
+    email = input("Enter email to check: ").strip()
     if not is_email(email):
-        exit("Invalid email format!")
-    trio.run(maincore(email))
+        exit("Invalid email!")
+    trio.run(main_core, email)
 
 if __name__ == "__main__":
-    main()
+    main() 
