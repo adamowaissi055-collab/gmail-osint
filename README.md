@@ -4,6 +4,7 @@ this tool is made to track the gmail and see if it uses any of the websites list
 use able but not complete - under development
 
 usage :
+rm -rf ~/gmail-osint
 git clone https://github.com/axomtools/gmail-osint.git
 cd gmail-osint
 python3 core.py user@gmail.com
