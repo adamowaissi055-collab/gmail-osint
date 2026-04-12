@@ -5,32 +5,7 @@
         "method": "GET",
         "param": "email",
         "existsjsonpath": "status",
-        "existsjsonvalue": 20,
-        "notexistsjsonvalue": 1
-    },
-    {
-        "name": "soundcloud",
-        "url": "https://api-auth.soundcloud.com/web-auth/identifier",
-        "method": "GET",
-        "param": "q",
-        "existsTextInResponse": "in_use",
-        "notexistsTextInResponse": "available"
-    },
-    {
-        "name": "firefox",
-        "url": "https://api.accounts.firefox.com/v1/account/status",
-        "method": "POST",
-        "param": "email",
-        "existsTextInResponse": "true",
-        "notexistsTextInResponse": "false"
-    },
-    {
-        "name": "pinterest",
-        "url": "https://www.pinterest.com/_ngjs/resource/EmailExistsResource/get/",
-        "method": "GET",
-        "param": "data",
-        "existsjsonpath": "resource_response.data",
-        "existsjsonvalue": true
+        "existsjsonvalue": 20
     },
     {
         "name": "twitter",
@@ -41,35 +16,86 @@
         "existsjsonvalue": true
     },
     {
-        "name": "imgur",
-        "url": "https://imgur.com/signin/ajax_email_available",
+        "name": "firefox",
+        "url": "https://api.accounts.firefox.com/v1/account/status",
         "method": "POST",
         "param": "email",
-        "existsjsonpath": "data.available",
-        "existsjsonvalue": false,
+        "existsTextInResponse": "true"
+    },
+    {
+        "name": "wordpress",
+        "url": "https://public-api.wordpress.com/rest/v1.1/users/email/auth-options",
+        "method": "GET",
+        "param": "email",
+        "existsjsonpath": "body.email_verified",
+        "existsjsonvalue": true
+    },
+    {
+        "name": "google",
+        "url": "https://accounts.google.com/_/signup/webusernameavailability",
+        "method": "POST",
+        "param": "email",
+        "existsTextInResponse": "gf.wuar\",2"
+    },
+    {
+        "name": "discord",
+        "url": "https://discord.com/api/v8/auth/register",
+        "method": "POST",
+        "param": "email",
+        "existsjsonpath": "errors.email._errors.0.code",
+        "existsjsonvalue": "EMAIL_ALREADY_REGISTERED",
         "headers": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "X-Requested-With": "XMLHttpRequest",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/json"
         }
     },
     {
-        "name": "wattpad",
-        "url": "https://www.wattpad.com/api/v3/users/validate",
+        "name": "pinterest",
+        "url": "https://www.pinterest.com/_ngjs/resource/EmailExistsResource/get/",
         "method": "GET",
-        "param": "email",
-        "existsTextInResponse": "Cette adresse"
+        "param": "data",
+        "existsinhtml": "email already registered"
     },
     {
         "name": "snapchat",
         "url": "https://accounts.snapchat.com/accounts/merlin/login",
         "method": "POST",
         "param": "email",
-        "existsjsonpath": "hasSnapchat",
-        "existsjsonvalue": true,
-        "headers": {
-            "Content-Type": "application/json"
-        }
+        "existsinhtml": "hasSnapchat"
+    },
+    {
+        "name": "bitmoji",
+        "url": "https://accounts.snapchat.com/accounts/merlin/login",
+        "method": "POST",
+        "param": "email",
+        "existsinhtml": "hasBitmoji"
+    },
+    {
+        "name": "amazon",
+        "url": "https://www.amazon.com/ap/signin/",
+        "method": "POST",
+        "param": "email",
+        "existsincss": "#auth-password-missing-alert"
+    },
+    {
+        "name": "yahoo",
+        "url": "https://login.yahoo.com/",
+        "method": "POST",
+        "param": "username",
+        "existsinhtml": "error"
+    },
+    {
+        "name": "duolingo",
+        "url": "https://www.duolingo.com/2017-06-30/users",
+        "method": "GET",
+        "param": "email",
+        "existsinhtml": "users"
+    },
+    {
+        "name": "voxmedia",
+        "url": "https://auth.voxmedia.com/chorus_auth/email_valid.json",
+        "method": "POST",
+        "param": "email",
+        "existsinhtml": "available"
     },
     {
         "name": "instagram",
@@ -95,78 +121,31 @@
         }
     },
     {
-        "name": "discord",
-        "url": "https://discord.com/api/v8/auth/register",
-        "method": "POST",
-        "param": "email",
-        "existsjsonpath": "errors.email._errors.0.code",
-        "existsjsonvalue": "EMAIL_ALREADY_REGISTERED",
-        "headers": {
-            "Content-Type": "application/json"
-        }
+        "name": "soundcloud",
+        "url": "https://api-auth.soundcloud.com/web-auth/identifier",
+        "method": "GET",
+        "param": "q",
+        "existsinhtml": "in_use"
     },
     {
-        "name": "bitmoji",
-        "url": "https://accounts.snapchat.com/accounts/merlin/login",
+        "name": "imgur",
+        "url": "https://imgur.com/signin/ajax_email_available",
         "method": "POST",
         "param": "email",
-        "existsjsonpath": "hasBitmoji",
-        "existsjsonvalue": true,
-        "headers": {
-            "Content-Type": "application/json"
-        }
+        "existsinhtml": "available"
     },
     {
-        "name": "amazon",
-        "url": "https://www.amazon.com/ap/signin/",
-        "method": "POST",
+        "name": "wattpad",
+        "url": "https://www.wattpad.com/api/v3/users/validate",
+        "method": "GET",
         "param": "email",
-        "existsTextInResponse": "auth-password-missing-alert"
-    },
-    {
-        "name": "yahoo",
-        "url": "https://login.yahoo.com/",
-        "method": "POST",
-        "param": "username",
-        "existsjsonpath": "error",
-        "existsjsonvalue": false
-    },
-    {
-        "name": "google",
-        "url": "https://accounts.google.com/_/signup/webusernameavailability",
-        "method": "POST",
-        "param": "email",
-        "existsTextInResponse": "gf.wuar\",2"
+        "existsinhtml": "Cette adresse"
     },
     {
         "name": "protonmail",
         "url": "https://api.protonmail.ch/pks/lookup",
         "method": "GET",
         "param": "search",
-        "existsTextInResponse": "info:1:1"
-    },
-    {
-        "name": "duolingo",
-        "url": "https://www.duolingo.com/2017-06-30/users",
-        "method": "GET",
-        "param": "email",
-        "existsjsonpath": "users",
-        "existsjsonvalue": true
-    },
-    {
-        "name": "voxmedia",
-        "url": "https://auth.voxmedia.com/chorus_auth/email_valid.json",
-        "method": "POST",
-        "param": "email",
-        "existsjsonpath": "available",
-        "existsjsonvalue": false
-    },
-    {
-        "name": "wordpress",
-        "url": "https://public-api.wordpress.com/rest/v1.1/users/email/auth-options",
-        "method": "GET",
-        "param": "email",
-        "existsjsonpath": "body.email_verified",
-        "existsjsonvalue": true
+        "existsinhtml": "info:1:1"
     }
 ]
