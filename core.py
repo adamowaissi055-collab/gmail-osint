@@ -1,6 +1,7 @@
 import json
 import sys
 import requests
+from bs4 import BeautifulSoup
 
 def loadmodules():
     with open("modules.json", "r") as f:
@@ -31,7 +32,10 @@ def checkemail(email, module):
             try:
                 data = resp.json()
             except:
-                return {"status": "error", "message": "Invalid JSON response"}
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                if module["existsjsonpath"] in resp.text:
+                    return {"status": "success", "exists": True}
+                return {"status": "success", "exists": False}
             keys = module["existsjsonpath"].split(".")
             for key in keys:
                 if not isinstance(data, dict):
@@ -43,6 +47,18 @@ def checkemail(email, module):
         
         if "existsTextInResponse" in module:
             if module["existsTextInResponse"] in resp.text:
+                return {"status": "success", "exists": True}
+            return {"status": "success", "exists": False}
+        
+        if "existsinhtml" in module:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            if soup.find(string=module["existsinhtml"]):
+                return {"status": "success", "exists": True}
+            return {"status": "success", "exists": False}
+        
+        if "existsincss" in module:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            if soup.select(module["existsincss"]):
                 return {"status": "success", "exists": True}
             return {"status": "success", "exists": False}
         
